@@ -16,7 +16,9 @@ import {
 import Link from "next/link";
 import { Category } from "@/app/_types/Category";
 
-// 拡張型: 記事数や作成日などの表示用プロパティを定義
+/**
+ * 拡張カテゴリ型: UI表示用の追加プロパティを定義
+ */
 interface ExtendedCategory extends Category {
   postCount?: number;
   imageUrl?: string;
@@ -39,7 +41,9 @@ const Page: React.FC = () => {
   const editInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
 
-  // カテゴリ一覧の取得
+  /**
+   * カテゴリ一覧の取得
+   */
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
@@ -48,7 +52,7 @@ const Page: React.FC = () => {
       const data = await res.json();
       setCategories(data);
     } catch (error) {
-      console.error(error);
+      console.error("Fetch error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +62,9 @@ const Page: React.FC = () => {
     fetchCategories();
   }, []);
 
-  // インライン名前編集の保存
+  /**
+   * インライン名前編集の保存処理
+   */
   const handleUpdateName = async (id: string) => {
     if (!tempName.trim()) { setEditingId(null); return; }
     setIsSubmitting(true);
@@ -72,13 +78,15 @@ const Page: React.FC = () => {
       await fetchCategories();
       setEditingId(null);
     } catch (e) {
-      window.alert("エラーが発生しました");
+      window.alert("更新に失敗しました。");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 新規カテゴリの追加
+  /**
+   * 新規カテゴリの追加処理
+   */
   const handleAddNew = async () => {
     if (!newName.trim()) { setIsAdding(false); return; }
     setIsSubmitting(true);
@@ -93,13 +101,15 @@ const Page: React.FC = () => {
       setNewName("");
       setIsAdding(false);
     } catch (e) {
-      window.alert("カテゴリの追加に失敗しました");
+      window.alert("カテゴリの追加に失敗しました。");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 削除処理
+  /**
+   * 削除処理（確認ダイアログ付き）
+   */
   const handleDelete = async (cat: ExtendedCategory) => {
     const message = cat.postCount && cat.postCount > 0 
       ? `警告: このカテゴリは ${cat.postCount} 件の記事で使用されています。\n本当に削除しますか？`
@@ -113,13 +123,15 @@ const Page: React.FC = () => {
       if (!res.ok) throw new Error("削除に失敗しました");
       await fetchCategories();
     } catch (e) {
-      window.alert("削除に失敗しました");
+      window.alert("削除に失敗しました。");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 検索とソートの適用
+  /**
+   * 検索とソートの適用ロジック
+   */
   const processedCategories = useMemo(() => {
     if (!categories) return [];
     let result = [...categories];
@@ -137,14 +149,19 @@ const Page: React.FC = () => {
     return result;
   }, [categories, searchQuery, sortBy]);
 
-  if (isLoading) return <div className="p-10 text-slate-400 font-bold flex items-center justify-center"><FontAwesomeIcon icon={faSpinner} className="animate-spin mr-3 text-indigo-500" />読み込み中...</div>;
+  if (isLoading) return (
+    <div className="p-10 text-slate-400 font-bold flex items-center justify-center">
+      <FontAwesomeIcon icon={faSpinner} className="animate-spin mr-3 text-indigo-500" />
+      読み込み中...
+    </div>
+  );
 
   return (
     <main className="max-w-6xl mx-auto p-4 md:p-10 min-h-screen bg-white selection:bg-indigo-100">
       <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-slate-800 font-sans">カテゴリ管理</h1>
-          <p className="text-slate-500 text-sm font-medium italic">名前をクリックして編集、または新規追加が可能です。</p>
+          <p className="text-slate-500 text-sm font-medium italic">名前をクリックして直接編集、または新規カテゴリを追加できます。</p>
         </div>
         <button 
           onClick={() => { setIsAdding(true); setTimeout(() => addInputRef.current?.focus(), 0); }}
@@ -181,7 +198,7 @@ const Page: React.FC = () => {
       </div>
 
       <div className="space-y-1.5">
-        {/* ヘッダー行 (PCのみ) */}
+        {/* ヘッダー行 (PCのみ) - 列の割り当てを明示 */}
         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 mb-4 bg-slate-50/50 rounded-t-lg">
           <div className="col-span-6">カテゴリ詳細</div>
           <div className="col-span-2 text-center border-l border-slate-200">作成日</div>
@@ -212,7 +229,7 @@ const Page: React.FC = () => {
               key={cat.id} 
               className="grid grid-cols-1 md:grid-cols-12 gap-4 px-4 md:px-6 py-4 md:py-3.5 items-center group bg-white border border-slate-100 rounded-2xl md:rounded-xl hover:bg-slate-50 hover:shadow-lg hover:shadow-indigo-500/5 transition-all"
             >
-              {/* カテゴリ名カラム (col-span-6) */}
+              {/* カテゴリ詳細 (PC: col-span-6) */}
               <div className="col-span-1 md:col-span-6 flex items-center space-x-4">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300 overflow-hidden border border-slate-100 shadow-inner shrink-0 group-hover:bg-white transition-colors">
                   {cat.imageUrl ? (
@@ -251,12 +268,12 @@ const Page: React.FC = () => {
                 </div>
               </div>
 
-              {/* 作成日カラム (col-span-2) */}
+              {/* 作成日 (PC: col-span-2) */}
               <div className="hidden md:block col-span-2 text-center text-[12px] font-bold text-slate-400 tracking-tight">
                 {cat.createdAt ? new Date(cat.createdAt).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}
               </div>
 
-              {/* アクションカラム (col-span-4) */}
+              {/* アクション (PC: col-span-4) */}
               <div className="col-span-1 md:col-span-4 flex items-center justify-between md:justify-end space-x-3 mt-3 md:mt-0">
                 <Link href={`/admin/posts?categoryId=${cat.id}`} className="flex-1 md:flex-none">
                   <button 
@@ -289,7 +306,7 @@ const Page: React.FC = () => {
         )}
       </div>
 
-      {/* ローディングオーバーレイ */}
+      {/* 処理中オーバーレイ */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex items-center justify-center">
           <div className="bg-white px-10 py-6 rounded-3xl shadow-2xl border border-slate-100 flex flex-col items-center space-y-4">
