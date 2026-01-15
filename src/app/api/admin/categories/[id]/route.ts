@@ -1,47 +1,33 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
-import { Category } from "@/generated/prisma/client";
 
-type RouteParams = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-// ▼▼▼ 追加: ここから ▼▼▼
-type RequestBody = {
-  name: string;
-};
+type RouteParams = { params: Promise<{ id: string }> };
 
 export const PUT = async (req: NextRequest, routeParams: RouteParams) => {
   try {
     const { id } = await routeParams.params;
-    const { name }: RequestBody = await req.json();
-    const category: Category = await prisma.category.update({
+    const { name, imageURL, description } = await req.json(); // ← name以外も受け取る
+    
+    const category = await prisma.category.update({
       where: { id },
-      data: { name },
+      data: { 
+        name: name?.trim(), 
+        imageURL, 
+        description 
+      },
     });
     return NextResponse.json(category);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "カテゴリの名前変更に失敗しました" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "更新失敗" }, { status: 500 });
   }
 };
-// ▲▲▲ 追加: ここまで ▲▲▲
 
 export const DELETE = async (req: NextRequest, routeParams: RouteParams) => {
   try {
     const { id } = await routeParams.params;
-    const category: Category = await prisma.category.delete({ where: { id } });
-    return NextResponse.json({ msg: `「${category.name}」を削除しました。` });
+    await prisma.category.delete({ where: { id } });
+    return NextResponse.json({ msg: "削除しました" });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "カテゴリの削除に失敗しました" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "削除失敗" }, { status: 500 });
   }
 };
