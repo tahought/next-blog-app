@@ -30,6 +30,8 @@ model Post {
 model Category {
   id         String @id @default(uuid())
   name       String @unique
+  imageURL    String?  // ← 追加：カテゴリ画像用のURL
+  description String?  // ← 追加：説明文用のフィールド
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   posts      PostCategory[]

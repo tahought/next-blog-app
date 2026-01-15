@@ -17,6 +17,7 @@
     "@prisma/client": "^7.1.0",
     "dayjs": "^1.11.19",
     "isomorphic-dompurify": "^2.31.0",
+    "lucide-react": "^0.562.0",
     "next": "^15.5.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",
