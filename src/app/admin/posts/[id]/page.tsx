@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react"; // Suspenseを追加
+import { useParams, useSearchParams } from "next/navigation"; // useSearchParamsを追加
+
 import type { Post } from "@/app/_types/Post";
 import type { PostApiResponse } from "@/app/_types/PostApiResponse";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import Image from "next/image";
+
 import DOMPurify from "isomorphic-dompurify";
 
 const PostDetail: React.FC = () => {
@@ -15,14 +17,15 @@ const PostDetail: React.FC = () => {
 
   const { id } = useParams() as { id: string };
   const searchParams = useSearchParams();
-  // URLに ?preview=true があるかチェック
+  // URLに ?preview=true が含まれているか判定
   const isPreviewMode = searchParams.get("preview") === "true";
 
   useEffect(() => {
     const fetchPost = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/posts/${id}`, {
+        const requestUrl = `/api/posts/${id}`;
+        const response = await fetch(requestUrl, {
           method: "GET",
           cache: "no-store",
         });
@@ -31,7 +34,7 @@ const PostDetail: React.FC = () => {
         }
         const res: PostApiResponse = await response.json();
 
-        // プレビューモードでなく、かつ下書き状態なら表示させない
+        // 【重要】下書きかつプレビューモードでない場合はアクセス拒否
         if (!res.published && !isPreviewMode) {
           throw new Error("この記事は現在非公開（下書き）です。");
         }
@@ -41,15 +44,21 @@ const PostDetail: React.FC = () => {
           title: res.title,
           content: res.content,
           published: res.published,
-          coverImage: { url: res.coverImageURL, width: 1000, height: 1000 },
+          coverImage: {
+            url: res.coverImageURL,
+            width: 1000,
+            height: 1000,
+          },
           createdAt: res.createdAt,
-          categories: res.categories.map((c) => ({
-            id: c.category.id,
-            name: c.category.name,
+          categories: res.categories.map((category) => ({
+            id: category.category.id,
+            name: category.category.name,
           })),
         });
       } catch (e) {
-        setFetchError(e instanceof Error ? e.message : "エラーが発生しました");
+        setFetchError(
+          e instanceof Error ? e.message : "予期せぬエラーが発生しました",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -69,26 +78,27 @@ const PostDetail: React.FC = () => {
   if (isLoading || !post) {
     return (
       <div className="text-gray-500 p-12 text-center">
-        <FontAwesomeIcon icon={faSpinner} className="mr-2 animate-spin" />
+        <FontAwesomeIcon icon={faSpinner} className="mr-1 animate-spin" />
         Loading...
       </div>
     );
   }
 
+  // サニタイズ設定を見直し（段落や見出しを許可）
   const safeHTML = DOMPurify.sanitize(post.content, {
     ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "br", "p", "div", "h1", "h2", "h3"],
   });
 
   return (
     <main className="max-w-4xl mx-auto p-6 md:p-12 bg-white min-h-screen">
-      {/* プレビュー中であることを示すバナー */}
+      {/* プレビューモード用のバナー表示 */}
       {isPreviewMode && !post.published && (
         <div className="bg-amber-50 border-l-4 border-amber-500 text-amber-700 p-4 mb-8 rounded shadow-sm">
           <p className="font-bold flex items-center">
             <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" />
             プレビューモード
           </p>
-          <p className="text-sm italic">この記事は現在「下書き」状態です。管理者以外には公開されていません。</p>
+          <p className="text-sm italic">この記事は現在「下書き」状態です。管理者以外には表示されません。</p>
         </div>
       )}
 
@@ -126,9 +136,9 @@ const PostDetail: React.FC = () => {
   );
 };
 
-// searchParams を使用するため Suspense でラップ
+// useSearchParamsを使うコンポーネントはSuspenseでラップする必要がある（Next.jsの仕様）
 const Page = () => (
-  <Suspense fallback={<div>Loading...</div>}>
+  <Suspense fallback={<div className="p-12 text-center">Loading...</div>}>
     <PostDetail />
   </Suspense>
 );
