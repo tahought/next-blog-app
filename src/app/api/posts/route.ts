@@ -1,23 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 
-type RouteParams = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-export const GET = async (req: NextRequest, routeParams: RouteParams) => {
+// 一覧取得ルートなので RouteParams は不要です
+export const GET = async (req: NextRequest) => {
   try {
-    const { id } = await routeParams.params;
-
-    const post = await prisma.post.findUnique({
-      where: { id },
+    // findUnique ではなく findMany を使って全記事（または公開済み記事）を取得します
+    const posts = await prisma.post.findMany({
+      where: {
+        published: true, // 公開済みの記事のみ取得する場合
+      },
       select: {
         id: true,
         title: true,
         content: true,
-        published: true, // 追加
+        published: true,
         coverImageURL: true,
         createdAt: true,
         updatedAt: true,
@@ -32,20 +28,16 @@ export const GET = async (req: NextRequest, routeParams: RouteParams) => {
           },
         },
       },
+      orderBy: {
+        createdAt: "desc", // 新しい順に並べる
+      },
     });
 
-    if (!post) {
-      return NextResponse.json(
-        { error: `id='${id}'の投稿記事は見つかりませんでした` },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(post);
+    return NextResponse.json(posts);
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { error: "投稿記事の取得に失敗しました" },
+      { error: "投稿記事一覧の取得に失敗しました" },
       { status: 500 },
     );
   }
